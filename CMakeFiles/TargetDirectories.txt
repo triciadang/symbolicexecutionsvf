@@ -1,0 +1,8 @@
+/Users/triciadang/Documents/CS6340/SVF-example/CMakeFiles/rebuild_cache.dir
+/Users/triciadang/Documents/CS6340/SVF-example/CMakeFiles/edit_cache.dir
+/Users/triciadang/Documents/CS6340/SVF-example/CMakeFiles/acc_gen.dir
+/Users/triciadang/Documents/CS6340/SVF-example/CMakeFiles/omp_gen.dir
+/Users/triciadang/Documents/CS6340/SVF-example/CMakeFiles/intrinsics_gen.dir
+/Users/triciadang/Documents/CS6340/SVF-example/src/CMakeFiles/rebuild_cache.dir
+/Users/triciadang/Documents/CS6340/SVF-example/src/CMakeFiles/edit_cache.dir
+/Users/triciadang/Documents/CS6340/SVF-example/src/CMakeFiles/svf-ex.dir
