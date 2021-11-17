@@ -75,6 +75,33 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
     // TODO: Extract constraints from nodes
     // TODO: Feed it to SMT solver
     // TODO: Update output to return based on output of SMT solver
+    context c;
+    std::list<expr> expr_list;
+    std::map<string, unsigned long> expr_str_to_idx_map;
+
+    for (const ICFGNode* vNode : nodeList) {
+        SVF::ICFGNode::PAGEdgeList pagEdges = vNode->getPAGEdges();
+
+        //for each PAGEdge in ICFGNode.getPAGEdges()
+        for (const PAGEdge* pagEdge : pagEdges) {
+            const Value *valuea = pagEdge->getValue();
+            const Instruction *valueb = pagEdge->getInst();
+
+            string opcodeName = valueb->getOpcodeName();
+            string beforeEqualOperand = valuea->getName().begin();
+            string loadoperand = valueb->operand_values().begin()->getName().data();
+
+            //alloca things
+
+            if (opcodeName.compare("alloca") == 0) {
+                MyFile << "O1 == " << beforeEqualOperand << endl;
+                if (expr_str_to_idx_map.find(beforeEqualOperand) != expr_str_to_idx_map.end()) {
+                    expr_str_to_idx_map[beforeEqualOperand] = expr_list.size();
+                    expr_list.push_back(c.int_const(beforeEqualOperand.c_str()));
+                }
+            }
+        }
+    }
     return false;
 }
 
@@ -111,7 +138,7 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
             ICFGNode* succNode = edge->getDstNode();
             if (succNode->getId() == targetNode) {
                 cout << currPathList.size() << "\n";  // Path leading to the target node
-                if (checkPathFeasibility(&currPathList)) {
+                if (checkPathFeasibility(currPathList)) {
                     return true;
                 }
                 continue;
