@@ -6,17 +6,17 @@
 
 #IncludeRegexTransform: 
 
-/Users/triciadang/Documents/CS6340/SVF-example/src/svf-ex.cpp
+/Users/triciadang/Documents/CS6340/good_one/src/svf-ex.cpp
 SVF-FE/LLVMUtil.h
-/Users/triciadang/Documents/CS6340/SVF-example/src/SVF-FE/LLVMUtil.h
+/Users/triciadang/Documents/CS6340/good_one/src/SVF-FE/LLVMUtil.h
 Graphs/SVFG.h
-/Users/triciadang/Documents/CS6340/SVF-example/src/Graphs/SVFG.h
+/Users/triciadang/Documents/CS6340/good_one/src/Graphs/SVFG.h
 WPA/Andersen.h
-/Users/triciadang/Documents/CS6340/SVF-example/src/WPA/Andersen.h
+/Users/triciadang/Documents/CS6340/good_one/src/WPA/Andersen.h
 SABER/LeakChecker.h
-/Users/triciadang/Documents/CS6340/SVF-example/src/SABER/LeakChecker.h
+/Users/triciadang/Documents/CS6340/good_one/src/SABER/LeakChecker.h
 SVF-FE/PAGBuilder.h
-/Users/triciadang/Documents/CS6340/SVF-example/src/SVF-FE/PAGBuilder.h
+/Users/triciadang/Documents/CS6340/good_one/src/SVF-FE/PAGBuilder.h
 z3++.h
 -
 

@@ -1,4 +1,4 @@
-# Install script for directory: /Users/triciadang/Documents/CS6340/SVF-example
+# Install script for directory: /Users/triciadang/Documents/CS6340/good_one
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/Users/triciadang/Documents/CS6340/SVF-example/src/cmake_install.cmake")
+  include("/Users/triciadang/Documents/CS6340/good_one/src/cmake_install.cmake")
 
 endif()
 
@@ -51,5 +51,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/Users/triciadang/Documents/CS6340/SVF-example/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/Users/triciadang/Documents/CS6340/good_one/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

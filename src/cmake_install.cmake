@@ -1,4 +1,4 @@
-# Install script for directory: /Users/triciadang/Documents/CS6340/SVF-example/src
+# Install script for directory: /Users/triciadang/Documents/CS6340/good_one/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

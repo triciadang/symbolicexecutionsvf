@@ -53,10 +53,10 @@ RM = /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/triciadang/Documents/CS6340/SVF-example
+CMAKE_SOURCE_DIR = /Users/triciadang/Documents/CS6340/good_one
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/triciadang/Documents/CS6340/SVF-example
+CMAKE_BINARY_DIR = /Users/triciadang/Documents/CS6340/good_one
 
 # Utility rule file for intrinsics_gen.
 
@@ -78,6 +78,6 @@ CMakeFiles/intrinsics_gen.dir/clean:
 .PHONY : CMakeFiles/intrinsics_gen.dir/clean
 
 CMakeFiles/intrinsics_gen.dir/depend:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/triciadang/Documents/CS6340/SVF-example /Users/triciadang/Documents/CS6340/SVF-example /Users/triciadang/Documents/CS6340/SVF-example /Users/triciadang/Documents/CS6340/SVF-example /Users/triciadang/Documents/CS6340/SVF-example/CMakeFiles/intrinsics_gen.dir/DependInfo.cmake --color=$(COLOR)
+	cd /Users/triciadang/Documents/CS6340/good_one && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/triciadang/Documents/CS6340/good_one /Users/triciadang/Documents/CS6340/good_one /Users/triciadang/Documents/CS6340/good_one /Users/triciadang/Documents/CS6340/good_one /Users/triciadang/Documents/CS6340/good_one/CMakeFiles/intrinsics_gen.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/intrinsics_gen.dir/depend
 

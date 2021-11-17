@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/triciadang/Documents/CS6340/SVF-example/src/svf-ex.cpp" "/Users/triciadang/Documents/CS6340/SVF-example/src/CMakeFiles/svf-ex.dir/svf-ex.cpp.o"
+  "/Users/triciadang/Documents/CS6340/good_one/src/svf-ex.cpp" "/Users/triciadang/Documents/CS6340/good_one/src/CMakeFiles/svf-ex.dir/svf-ex.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "Clang")
 

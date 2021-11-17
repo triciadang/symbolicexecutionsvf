@@ -145,6 +145,30 @@ void traverseOnICFG(ICFG* icfg, int functionRoot){
                 cout << valueb->getOpcodeName() << "\n";
                 cout << valueb->operand_values().begin()->getName().data() << "\n";
                 cout << next(valueb->operand_values().begin())->getName().data() << "\n";
+
+                string s1 = vNode->toString();
+                string s2 = "icmp";
+                string s3 = "!";
+
+
+                int posOfOpcode = s1.find(s2);
+                //see if icmp is in
+                if (posOfOpcode != string::npos) {
+                    string s4 = "i32 ";
+                    int posOfI32 = s1.find(s4);
+                    string delimiter = ",";
+                    int posOfDelimiter = s1.find(delimiter);
+
+                    string firstOperand = s1.substr(posOfI32 + 4,posOfDelimiter-posOfI32-4);
+                    cout << firstOperand << endl;
+
+                    s1.erase(0,posOfDelimiter+2);
+
+                    posOfDelimiter = s1.find(",");
+                    string secondOperand = s1.substr(0,posOfDelimiter);
+                    cout << secondOperand << endl;
+
+                }
             }
         }
 

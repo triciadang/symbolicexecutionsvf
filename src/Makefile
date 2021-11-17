@@ -57,10 +57,10 @@ RM = /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/triciadang/Documents/CS6340/SVF-example
+CMAKE_SOURCE_DIR = /Users/triciadang/Documents/CS6340/good_one
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/triciadang/Documents/CS6340/SVF-example
+CMAKE_BINARY_DIR = /Users/triciadang/Documents/CS6340/good_one
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,14 +87,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(CMAKE_COMMAND) -E cmake_progress_start /Users/triciadang/Documents/CS6340/SVF-example/CMakeFiles /Users/triciadang/Documents/CS6340/SVF-example/src//CMakeFiles/progress.marks
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/triciadang/Documents/CS6340/SVF-example/CMakeFiles 0
+	cd /Users/triciadang/Documents/CS6340/good_one && $(CMAKE_COMMAND) -E cmake_progress_start /Users/triciadang/Documents/CS6340/good_one/CMakeFiles /Users/triciadang/Documents/CS6340/good_one/src//CMakeFiles/progress.marks
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/triciadang/Documents/CS6340/good_one/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/clean
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/clean
 .PHONY : clean
 
 # The main clean target
@@ -103,22 +103,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /Users/triciadang/Documents/CS6340/good_one && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/CMakeFiles/svf-ex.dir/rule:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/svf-ex.dir/rule
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/svf-ex.dir/rule
 .PHONY : src/CMakeFiles/svf-ex.dir/rule
 
 # Convenience name for target.
@@ -127,7 +127,7 @@ svf-ex: src/CMakeFiles/svf-ex.dir/rule
 
 # fast build rule for target.
 svf-ex/fast:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/svf-ex.dir/build.make src/CMakeFiles/svf-ex.dir/build
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/svf-ex.dir/build.make src/CMakeFiles/svf-ex.dir/build
 .PHONY : svf-ex/fast
 
 svf-ex.o: svf-ex.cpp.o
@@ -135,7 +135,7 @@ svf-ex.o: svf-ex.cpp.o
 
 # target to build an object file
 svf-ex.cpp.o:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/svf-ex.dir/build.make src/CMakeFiles/svf-ex.dir/svf-ex.cpp.o
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/svf-ex.dir/build.make src/CMakeFiles/svf-ex.dir/svf-ex.cpp.o
 .PHONY : svf-ex.cpp.o
 
 svf-ex.i: svf-ex.cpp.i
@@ -143,7 +143,7 @@ svf-ex.i: svf-ex.cpp.i
 
 # target to preprocess a source file
 svf-ex.cpp.i:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/svf-ex.dir/build.make src/CMakeFiles/svf-ex.dir/svf-ex.cpp.i
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/svf-ex.dir/build.make src/CMakeFiles/svf-ex.dir/svf-ex.cpp.i
 .PHONY : svf-ex.cpp.i
 
 svf-ex.s: svf-ex.cpp.s
@@ -151,7 +151,7 @@ svf-ex.s: svf-ex.cpp.s
 
 # target to generate assembly for a file
 svf-ex.cpp.s:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/svf-ex.dir/build.make src/CMakeFiles/svf-ex.dir/svf-ex.cpp.s
+	cd /Users/triciadang/Documents/CS6340/good_one && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/svf-ex.dir/build.make src/CMakeFiles/svf-ex.dir/svf-ex.cpp.s
 .PHONY : svf-ex.cpp.s
 
 # Help Target
@@ -177,6 +177,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /Users/triciadang/Documents/CS6340/SVF-example && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /Users/triciadang/Documents/CS6340/good_one && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 
