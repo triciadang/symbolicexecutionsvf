@@ -10,14 +10,31 @@
 //      swap(&a,&b);
 //}
 
+//int foo(int n) {
+//    if (n == 3) {
+//        return n;
+//    } else {
+//        return n - 1;
+//    }
+//}
+//
+//int main() {
+//    return foo(10);
+//}
+
+#include <stdio.h>
+
 int foo(int n) {
     if (n == 3) {
-        return n;
+        return 0;
     } else {
-        return n - 1;
+        return - 1;
     }
 }
 
 int main() {
-    return foo(10);
+    int number;
+    scanf("%d", &number);
+    int output = foo(number);
+    return output;
 }

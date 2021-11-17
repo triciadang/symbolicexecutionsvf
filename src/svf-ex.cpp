@@ -32,6 +32,8 @@
 #include "SABER/LeakChecker.h"
 #include "SVF-FE/PAGBuilder.h"
 #include <z3++.h>
+#include <iostream>
+#include <fstream>
 
 
 using namespace SVF;
@@ -42,11 +44,10 @@ using namespace z3;
 static llvm::cl::opt<std::string> InputFilename(cl::Positional,
         llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
 
-static llvm::cl::opt<bool> LEAKCHECKER("leak", llvm::cl::init(false),
-                                       llvm::cl::desc("Memory Leak Detection"));
-
 int findRootOfFunction(ICFG* icfg, string fun_name);
 int findRoot(ICFG* icfg, string function_name);
+
+ofstream MyFile;
 /*!
  * An example to query alias results of two LLVM values
  */
@@ -146,16 +147,75 @@ void traverseOnICFG(ICFG* icfg, int functionRoot){
                 cout << valueb->operand_values().begin()->getName().data() << "\n";
                 cout << next(valueb->operand_values().begin())->getName().data() << "\n";
 
+                string opcodeName = valueb->getOpcodeName();
+                string beforeEqualOperand = valuea->getName().begin();
+                string loadoperand = valueb->operand_values().begin()->getName().data();
+
+                //alloca things
+                string alloca = "alloca";
+
+                if (opcodeName.compare(alloca) == 0) {
+                    MyFile << "O1 == " << beforeEqualOperand << endl;
+                }
+
+                //load things
+                string load = "load";
+                if (opcodeName.compare(load) == 0) {
+                    MyFile << loadoperand << " == o" << endl;
+                }
+
+
+
+                //icmp things
                 string s1 = vNode->toString();
                 string s2 = "icmp";
                 string s3 = "!";
-
 
                 int posOfOpcode = s1.find(s2);
                 //see if icmp is in
                 if (posOfOpcode != string::npos) {
                     string s4 = "i32 ";
                     int posOfI32 = s1.find(s4);
+
+                    string compareOperator = s1.substr(posOfOpcode + 5,posOfI32-posOfOpcode-6);
+                    cout << compareOperator << endl;
+                    string compareSign;
+
+                    if (compareOperator.compare("eq") == 0) {
+                        compareSign =  "==";
+                    }
+                    else if (compareOperator.compare("ne") == 0) {
+                        compareSign =  "!=";
+                    }
+                    else if (compareOperator.compare("ugt") == 0) {
+                        compareSign =  ">";
+                    }
+                    else if (compareOperator.compare("uge") == 0) {
+                        compareSign =  ">=";
+                    }
+                    else if (compareOperator.compare("ult") == 0) {
+                        compareSign =  "<";
+                    }
+                    else if (compareOperator.compare("ule") == 0) {
+                        compareSign =  "<=";
+                    }
+                    else if (compareOperator.compare("sgt") == 0) {
+                        compareSign =  ">";
+                    }
+                    else if (compareOperator.compare("sge") == 0) {
+                        compareSign =  ">=";
+                    }
+                    else if (compareOperator.compare("slt") == 0) {
+                        compareSign =  "<";
+                    }
+                    else if (compareOperator.compare("sle") == 0) {
+                        compareSign = "<=";
+                    }
+                    else{
+                        cout << "Invalid compare operator.";
+                        compareSign = "";
+                    }
+
                     string delimiter = ",";
                     int posOfDelimiter = s1.find(delimiter);
 
@@ -168,14 +228,11 @@ void traverseOnICFG(ICFG* icfg, int functionRoot){
                     string secondOperand = s1.substr(0,posOfDelimiter);
                     cout << secondOperand << endl;
 
+                    MyFile << firstOperand << " " << compareSign << " " << secondOperand << endl;
                 }
             }
         }
 
-
-
-        //cout << vNode->toString();
-        //cout << "\n";
 
 		for (ICFGNode::const_iterator it = vNode->OutEdgeBegin(), eit =
 				vNode->OutEdgeEnd(); it != eit; ++it) {
@@ -190,6 +247,8 @@ void traverseOnICFG(ICFG* icfg, int functionRoot){
 }
 
 int main(int argc, char ** argv) {
+
+    MyFile.open("constraints.txt");
 
     int arg_num = 0;
     char **arg_value = new char*[argc];
@@ -208,33 +267,9 @@ int main(int argc, char ** argv) {
 		/// ICFG
 		ICFG *icfg = pag->getICFG();
         int functionRoot = findRoot(icfg,"foo");
-        //cout << functionRoot;
-        //cout << "Number Needed: " << findRoot(icfg);
-
 		icfg->dump("icfg");
-        //ICFGNode* node =  icfg->getICFGNode(3);
-        //cout << node->toString();
         traverseOnICFG(icfg, functionRoot);
 
-
-
-		/// Value-Flow Graph (VFG)
-//		VFG *vfg = new VFG(callgraph);
-//		vfg->dump("vfg");
-
-		/// Sparse value-flow graph (SVFG)
-//		SVFGBuilder svfBuilder;
-//		SVFG *svfg = svfBuilder.buildFullSVFGWithoutOPT(ander);
-//		svfg->dump("svfg");
-
-		/// Collect uses of an LLVM Value
-		/// traverseOnVFG(svfg, value);
-
-		/// Collect all successor nodes on ICFG
-		/// traverseOnICFG(icfg, value);
-		
-//		LeakChecker *saber = new LeakChecker(); // if no checker is specified, we use leak checker as the default one.
-//		saber->runOnModule(svfModule);
 
         //Z3 solver trial
         //http://www.cs.utah.edu/~vinu/research/formal/tools/notes/z3-notes.html#sec-z3-c-interface-cheat-sheet
@@ -271,6 +306,7 @@ int main(int argc, char ** argv) {
 
 
 		LLVMModuleSet::getLLVMModuleSet()->dumpModulesToFile(".svf.bc");
+        MyFile.close();
 
 
     return 0;
