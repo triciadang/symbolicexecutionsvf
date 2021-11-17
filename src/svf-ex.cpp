@@ -45,45 +45,17 @@ static llvm::cl::opt<std::string> InputFilename(cl::Positional,
         llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
 
 int findRootOfFunction(ICFG* icfg, string fun_name);
-int findRoot(ICFG* icfg, string function_name);
+int findRoot(ICFG* icfg, const string& function_name);
 
 ofstream MyFile;
-/*!
- * An example to query alias results of two LLVM values
- */
-//AliasResult aliasQuery(PointerAnalysis* pta, Value* v1, Value* v2){
-//	return pta->alias(v1,v2);
-//}
 
-/*!
- * An example to print points-to set of an LLVM value
- */
-//std::string printPts(PointerAnalysis* pta, Value* val){
-//
-//    std::string str;
-//    raw_string_ostream rawstr(str);
-//
-//    NodeID pNodeId = pta->getPAG()->getValueNode(val);
-//    const NodeBS& pts = pta->getPts(pNodeId);
-//    for (NodeBS::iterator ii = pts.begin(), ie = pts.end();
-//            ii != ie; ii++) {
-//        rawstr << " " << *ii << " ";
-//        PAGNode* targetObj = pta->getPAG()->getPAGNode(*ii);
-//        if(targetObj->hasValue()){
-//            rawstr << "(" <<*targetObj->getValue() << ")\t ";
-//        }
-//    }
-//
-//    return rawstr.str();
-//
-//}
 
-int findRoot(ICFG* icfg, string function_name){
+int findRoot(ICFG* icfg, const string& function_name, const string& point_type){
     for (int i = 0; i < icfg->getTotalNodeNum(); i++){
         ICFGNode* iNode = icfg->getICFGNode(i);
         string nodeString =  iNode->toString();
         string s1 = "fun: " + function_name;
-        string s2 = "Entry";
+        string s2 = point_type;  // can only be either Entry or Exit
         if (nodeString.find(s1)!= string::npos && nodeString.find(s2) != string::npos){
             return i;
         }
@@ -91,28 +63,67 @@ int findRoot(ICFG* icfg, string function_name){
     return -1;
 }
 
-int findRootOfFunction(ICFG* icfg, string fun_name){
-    auto it = icfg->begin();
-    while(it != icfg->end()){
-        if(it->first != 0){
-            if(CallBlockNode::classof(icfg->getICFGNode(it->first))==1){
-                const Instruction *val = reinterpret_cast<CallBlockNode*>(icfg->getICFGNode(it->first))->getCallSite();
 
-                const CallInst *CI = dyn_cast<SVF::CallInst>(val);
+/**
+ * Accepts a reference to a list of ICFGNode objects, extracts constraints from each node, run an SMT solver on it, and
+ * returns whether or not is the path feasible.
+ *
+ * @param nodeList  Reference to a list of ICFGNode objects
+ * @return          Boolean value denoting the feasibility of the path
+ */
+bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
+    // TODO: Extract constraints from nodes
+    // TODO: Feed it to SMT solver
+    // TODO: Update output to return based on output of SMT solver
+    return false;
+}
 
-                std::string str;
-                llvm::raw_string_ostream rawstr(str);
 
-                Function *F= CI->getCalledFunction();
-                string here =  F->getName().begin();
-                if (here == fun_name){
-                    cout << it->first;
-                    return it->first;
-                }
-            }
+/**
+ * Accepts the ICFG along with function root ID and target node ID to return a boolean value representing whether or not
+ * is the target node reachable.
+ * TODO: Add support for getting inputs needed to reach the target node.
+ *
+ * @param icfg          ICFG graph from svf-tools
+ * @param functionRoot  Node ID of the function root
+ * @param targetNode    Node ID of the target node
+ * @return              Boolean value denoting the reachability of the target node.
+ */
+bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) {
+    const ICFGNode* iNode = icfg->getICFGNode(functionRoot);
+    std::list<const ICFGNode*> worklist;  // FILOList
+    std::list<const ICFGNode*> emptyList;
+    std::list<std::list<const ICFGNode*>> pathList;  // FILOList, keeps track of how we got to the current node
+    worklist.push_back(iNode);
+    pathList.push_back(emptyList);
+
+    while (!worklist.empty()) {
+        const ICFGNode* vNode = worklist.back();
+        worklist.pop_back();
+        std::list<const ICFGNode*> currPathList = pathList.back();
+        pathList.pop_back();
+        if ((int) vNode->getId() != functionRoot) {
+            cout << vNode->toString() << "==================\n";
         }
-        ++it;
+
+        for (auto it = vNode->OutEdgeBegin(); it != vNode->OutEdgeEnd(); ++it) {
+            ICFGEdge* edge = *it;
+            ICFGNode* succNode = edge->getDstNode();
+            if (succNode->getId() == targetNode) {
+                cout << currPathList.size() << "\n";  // Path leading to the target node
+                if (checkPathFeasibility(&currPathList)) {
+                    return true;
+                }
+                continue;
+            }
+            worklist.push_back(succNode);
+            std::list<const ICFGNode*> newPathList = std::list<const ICFGNode*>(currPathList);
+            newPathList.push_back(succNode);
+            pathList.push_back(newPathList);
+//            cout << succNode->getId() << "\n";
+        }
     }
+    return false;
 }
 
 
@@ -135,10 +146,9 @@ void traverseOnICFG(ICFG* icfg, int functionRoot){
             SVF::ICFGNode::PAGEdgeList pagEdges = vNode->getPAGEdges();
 
             //for each PAGEdge in ICFGNode.getPAGEdges()
-            for (auto pagIterator = pagEdges.begin(); pagIterator != pagEdges.end(); ++pagIterator) {
+            for (auto pagEdge : pagEdges) {
                 //auto pagIterator = pagEdges.begin();
                 //std::advance(pagIterator, 0);
-                const PAGEdge *pagEdge = *pagIterator;
                 const Value *valuea = pagEdge->getValue();
                 const Instruction *valueb = pagEdge->getInst();
 
@@ -265,9 +275,10 @@ int main(int argc, char ** argv) {
 
 		/// ICFG
 		ICFG *icfg = pag->getICFG();
-        int functionRoot = findRoot(icfg,"foo");
+        int functionRoot = findRoot(icfg,"foo", "Entry");
 		icfg->dump("icfg");
-        traverseOnICFG(icfg, functionRoot);
+        int functionExit = findRoot(icfg,"foo", "Exit");
+        checkReachabilityForFunction(icfg, functionRoot, functionExit);
 
 
         //Z3 solver trial
