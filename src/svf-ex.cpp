@@ -165,7 +165,6 @@ void traverseOnICFG(ICFG* icfg, int functionRoot){
                 }
 
 
-
                 //icmp things
                 string s1 = vNode->toString();
                 string s2 = "icmp";
@@ -247,7 +246,7 @@ void traverseOnICFG(ICFG* icfg, int functionRoot){
 }
 
 int main(int argc, char ** argv) {
-
+    //file to write mathematical constraints taken from the ICFG
     MyFile.open("constraints.txt");
 
     int arg_num = 0;
