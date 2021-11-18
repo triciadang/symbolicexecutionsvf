@@ -64,6 +64,13 @@ int findRoot(ICFG* icfg, const string& function_name, const string& point_type){
 }
 
 
+bool is_number(const std::string& s)
+{
+    return !s.empty() && std::find_if(s.begin(),
+                                      s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
+}
+
+
 /**
  * Accepts a reference to a list of ICFGNode objects, extracts constraints from each node, run an SMT solver on it, and
  * returns whether or not is the path feasible.
@@ -77,6 +84,7 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
     // TODO: Update output to return based on output of SMT solver
     context c;
     std::list<expr> expr_list;
+    std::list<expr> constraints;
     std::map<string, unsigned long> expr_str_to_idx_map;
 
     for (const ICFGNode* vNode : nodeList) {
@@ -89,20 +97,188 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
 
             string opcodeName = valueb->getOpcodeName();
             string beforeEqualOperand = valuea->getName().begin();
-            string loadoperand = valueb->operand_values().begin()->getName().data();
+            string loadOperand = valueb->operand_values().begin()->getName().data();
+            string s1 = vNode->toString();
 
             //alloca things
 
             if (opcodeName.compare("alloca") == 0) {
                 MyFile << "O1 == " << beforeEqualOperand << endl;
-                if (expr_str_to_idx_map.find(beforeEqualOperand) != expr_str_to_idx_map.end()) {
+                if (expr_str_to_idx_map.find(beforeEqualOperand) == expr_str_to_idx_map.end()) {
                     expr_str_to_idx_map[beforeEqualOperand] = expr_list.size();
                     expr_list.push_back(c.int_const(beforeEqualOperand.c_str()));
                 }
             }
+
+            if (opcodeName.compare("load") == 0) {
+                int equalsPos = s1.find(" = ");
+                int blankPos = s1.find("   ");
+                string firstVar = s1.substr(blankPos + 3, equalsPos - blankPos - 3);
+                MyFile << firstVar << " = " << loadOperand << endl;
+                if (expr_str_to_idx_map.find(firstVar) == expr_str_to_idx_map.end()) {
+                    expr_str_to_idx_map[firstVar] = expr_list.size();
+                    expr_list.push_back(c.int_const(firstVar.c_str()));
+                }
+
+                int loadOperandIdx = expr_str_to_idx_map[loadOperand];
+                auto load_expr_it = expr_list.begin();
+                std::advance(load_expr_it, loadOperandIdx);
+                expr load_expr = *load_expr_it;
+
+                int firstVarIdx = expr_str_to_idx_map[firstVar];
+                auto first_var_it = expr_list.begin();
+                std::advance(first_var_it, firstVarIdx);
+                expr first_var = *first_var_it;
+
+                constraints.push_back(first_var == load_expr);
+            }
+
+            //icmp things
+            int posOfOpcode = s1.find("icmp");
+            //see if icmp is in
+            if (posOfOpcode != string::npos) {
+                cout << "lol" << s1 << "\n";
+                int posOfI32 = s1.find("i32 ");
+
+                string compareOperator = s1.substr(posOfOpcode + 5,posOfI32-posOfOpcode-6);
+//                cout << compareOperator << endl;
+                string compareSign;
+
+                string delimiter = ",";
+                int posOfDelimiter = s1.find(delimiter);
+
+                string firstOperand = s1.substr(posOfI32 + 4,posOfDelimiter-posOfI32-4);
+//                cout << firstOperand << endl;
+
+                s1.erase(0,posOfDelimiter+2);
+
+                posOfDelimiter = s1.find(delimiter);
+                string secondOperand = s1.substr(0,posOfDelimiter);
+//                cout << secondOperand << endl;
+
+                int firstOperandIdx = expr_str_to_idx_map[firstOperand];
+                auto first_expr_it = expr_list.begin();
+                std::advance(first_expr_it, firstOperandIdx);
+                expr first_expr = *first_expr_it;
+
+                expr second_expr = c.int_const("whoo");
+                if (!is_number(secondOperand)) {
+                    int secondOperandIdx = expr_str_to_idx_map[secondOperand];
+                    auto second_expr_it = expr_list.begin();
+                    std::advance(second_expr_it, secondOperandIdx);
+                    second_expr = *second_expr_it;
+                }
+
+                if (compareOperator.compare("eq") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr == second_expr);
+                    } else {
+                        constraints.push_back(first_expr == stoi(secondOperand));
+                    }
+                    compareSign =  "==";
+                } else if (compareOperator.compare("ne") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr != second_expr);
+                    } else {
+                        constraints.push_back(first_expr != stoi(secondOperand));
+                    }
+                    compareSign =  "!=";
+                }
+                else if (compareOperator.compare("ugt") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr > second_expr);
+                    } else {
+                        constraints.push_back(first_expr > stoi(secondOperand));
+                    }
+                    compareSign =  ">";
+                }
+                else if (compareOperator.compare("uge") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr >= second_expr);
+                    } else {
+                        constraints.push_back(first_expr >= stoi(secondOperand));
+                    }
+                    compareSign =  ">=";
+                }
+                else if (compareOperator.compare("ult") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr < second_expr);
+                    } else {
+                        constraints.push_back(first_expr < stoi(secondOperand));
+                    }
+                    compareSign =  "<";
+                }
+                else if (compareOperator.compare("ule") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr <= second_expr);
+                    } else {
+                        constraints.push_back(first_expr <= stoi(secondOperand));
+                    }
+                    compareSign =  "<=";
+                }
+                else if (compareOperator.compare("sgt") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr > second_expr);
+                    } else {
+                        constraints.push_back(first_expr > stoi(secondOperand));
+                    }
+                    compareSign =  ">";
+                }
+                else if (compareOperator.compare("sge") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr >= second_expr);
+                    } else {
+                        constraints.push_back(first_expr >= stoi(secondOperand));
+                    }
+                    compareSign =  ">=";
+                }
+                else if (compareOperator.compare("slt") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr < second_expr);
+                    } else {
+                        constraints.push_back(first_expr < stoi(secondOperand));
+                    }
+                    compareSign =  "<";
+                }
+                else if (compareOperator.compare("sle") == 0) {
+                    if (!is_number(secondOperand)) {
+                        constraints.push_back(first_expr <= second_expr);
+                    } else {
+                        constraints.push_back(first_expr <= stoi(secondOperand));
+                    }
+                    compareSign = "<=";
+                }
+                else{
+                    cout << "Invalid compare operator.";
+                    compareSign = "";
+                }
+                MyFile << firstOperand << " " << compareSign << " " << secondOperand << endl;
+            }
         }
     }
-    return false;
+//    for (const auto & it : expr_str_to_idx_map) {
+//        cout << it.first << " " << it.second << "\n";
+//    }
+//    for (const auto & curr_expr : expr_list) {
+//        cout << curr_expr << "\n";
+//    }
+
+    solver s(c);
+    for (const auto & curr_expr : constraints) {
+        s.add(curr_expr);
+//        cout << curr_expr << "\n";
+    }
+
+    switch(s.check()) {
+        case z3::sat:
+            return true;
+        case z3::unsat:
+            return false;
+        case z3::unknown:
+            return false;
+        default:
+            return false;
+    }
 }
 
 
