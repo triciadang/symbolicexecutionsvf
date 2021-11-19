@@ -78,7 +78,7 @@ bool is_number(const std::string& s)
  * @param nodeList  Reference to a list of ICFGNode objects
  * @return          Boolean value denoting the feasibility of the path
  */
-bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
+bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>& icmpBranchList) {
     // TODO: Extract constraints from nodes
     // TODO: Feed it to SMT solver
     // TODO: Update output to return based on output of SMT solver
@@ -89,6 +89,7 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
 
     for (const ICFGNode* vNode : nodeList) {
         SVF::ICFGNode::PAGEdgeList pagEdges = vNode->getPAGEdges();
+        string s1 = vNode->toString();
 
         //for each PAGEdge in ICFGNode.getPAGEdges()
         for (const PAGEdge* pagEdge : pagEdges) {
@@ -98,7 +99,6 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
             string opcodeName = valueb->getOpcodeName();
             string beforeEqualOperand = valuea->getName().begin();
             string loadOperand = valueb->operand_values().begin()->getName().data();
-            string s1 = vNode->toString();
 
             //alloca things
 
@@ -132,128 +132,140 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
 
                 constraints.push_back(first_var == load_expr);
             }
+        }
 
-            //icmp things
-            int posOfOpcode = s1.find("icmp");
-            //see if icmp is in
-            if (posOfOpcode != string::npos) {
-                cout << "lol" << s1 << "\n";
-                int posOfI32 = s1.find("i32 ");
+        //icmp things
+        int posOfOpcode = s1.find("icmp");
+        //see if icmp is in
+        if (posOfOpcode != string::npos) {
+//                cout << "Ohh well!" << "\n";
+            bool currBranchResult = icmpBranchList.front();
+            icmpBranchList.pop_front();
+//                cout << "Whoo!" << currBranchResult << "\n";
 
-                string compareOperator = s1.substr(posOfOpcode + 5,posOfI32-posOfOpcode-6);
+            cout << "lol" << s1 << "\n";
+            int posOfI32 = s1.find("i32 ");
+
+            string compareOperator = s1.substr(posOfOpcode + 5,posOfI32-posOfOpcode-6);
 //                cout << compareOperator << endl;
-                string compareSign;
+            string compareSign;
 
-                string delimiter = ",";
-                int posOfDelimiter = s1.find(delimiter);
+            string delimiter = ",";
+            int posOfDelimiter = s1.find(delimiter);
 
-                string firstOperand = s1.substr(posOfI32 + 4,posOfDelimiter-posOfI32-4);
+            string firstOperand = s1.substr(posOfI32 + 4,posOfDelimiter-posOfI32-4);
 //                cout << firstOperand << endl;
 
-                s1.erase(0,posOfDelimiter+2);
+            s1.erase(0,posOfDelimiter+2);
 
-                posOfDelimiter = s1.find(delimiter);
-                string secondOperand = s1.substr(0,posOfDelimiter);
+            posOfDelimiter = s1.find(delimiter);
+            string secondOperand = s1.substr(0,posOfDelimiter);
 //                cout << secondOperand << endl;
 
-                int firstOperandIdx = expr_str_to_idx_map[firstOperand];
-                auto first_expr_it = expr_list.begin();
-                std::advance(first_expr_it, firstOperandIdx);
-                expr first_expr = *first_expr_it;
+            int firstOperandIdx = expr_str_to_idx_map[firstOperand];
+            auto first_expr_it = expr_list.begin();
+            std::advance(first_expr_it, firstOperandIdx);
+            expr first_expr = *first_expr_it;
 
-                expr second_expr = c.int_const("whoo");
-                if (!is_number(secondOperand)) {
-                    int secondOperandIdx = expr_str_to_idx_map[secondOperand];
-                    auto second_expr_it = expr_list.begin();
-                    std::advance(second_expr_it, secondOperandIdx);
-                    second_expr = *second_expr_it;
-                }
-
-                if (compareOperator.compare("eq") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr == second_expr);
-                    } else {
-                        constraints.push_back(first_expr == stoi(secondOperand));
-                    }
-                    compareSign =  "==";
-                } else if (compareOperator.compare("ne") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr != second_expr);
-                    } else {
-                        constraints.push_back(first_expr != stoi(secondOperand));
-                    }
-                    compareSign =  "!=";
-                }
-                else if (compareOperator.compare("ugt") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr > second_expr);
-                    } else {
-                        constraints.push_back(first_expr > stoi(secondOperand));
-                    }
-                    compareSign =  ">";
-                }
-                else if (compareOperator.compare("uge") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr >= second_expr);
-                    } else {
-                        constraints.push_back(first_expr >= stoi(secondOperand));
-                    }
-                    compareSign =  ">=";
-                }
-                else if (compareOperator.compare("ult") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr < second_expr);
-                    } else {
-                        constraints.push_back(first_expr < stoi(secondOperand));
-                    }
-                    compareSign =  "<";
-                }
-                else if (compareOperator.compare("ule") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr <= second_expr);
-                    } else {
-                        constraints.push_back(first_expr <= stoi(secondOperand));
-                    }
-                    compareSign =  "<=";
-                }
-                else if (compareOperator.compare("sgt") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr > second_expr);
-                    } else {
-                        constraints.push_back(first_expr > stoi(secondOperand));
-                    }
-                    compareSign =  ">";
-                }
-                else if (compareOperator.compare("sge") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr >= second_expr);
-                    } else {
-                        constraints.push_back(first_expr >= stoi(secondOperand));
-                    }
-                    compareSign =  ">=";
-                }
-                else if (compareOperator.compare("slt") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr < second_expr);
-                    } else {
-                        constraints.push_back(first_expr < stoi(secondOperand));
-                    }
-                    compareSign =  "<";
-                }
-                else if (compareOperator.compare("sle") == 0) {
-                    if (!is_number(secondOperand)) {
-                        constraints.push_back(first_expr <= second_expr);
-                    } else {
-                        constraints.push_back(first_expr <= stoi(secondOperand));
-                    }
-                    compareSign = "<=";
-                }
-                else{
-                    cout << "Invalid compare operator.";
-                    compareSign = "";
-                }
-                MyFile << firstOperand << " " << compareSign << " " << secondOperand << endl;
+            expr second_expr = c.int_const("whoo");
+            if (!is_number(secondOperand)) {
+                int secondOperandIdx = expr_str_to_idx_map[secondOperand];
+                auto second_expr_it = expr_list.begin();
+                std::advance(second_expr_it, secondOperandIdx);
+                second_expr = *second_expr_it;
             }
+
+            if (compareOperator.compare("eq") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr == second_expr);
+                } else {
+                    constraints.push_back(first_expr == stoi(secondOperand));
+                }
+                compareSign =  "==";
+            } else if (compareOperator.compare("ne") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr != second_expr);
+                } else {
+                    constraints.push_back(first_expr != stoi(secondOperand));
+                }
+                compareSign =  "!=";
+            }
+            else if (compareOperator.compare("ugt") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr > second_expr);
+                } else {
+                    constraints.push_back(first_expr > stoi(secondOperand));
+                }
+                compareSign =  ">";
+            }
+            else if (compareOperator.compare("uge") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr >= second_expr);
+                } else {
+                    constraints.push_back(first_expr >= stoi(secondOperand));
+                }
+                compareSign =  ">=";
+            }
+            else if (compareOperator.compare("ult") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr < second_expr);
+                } else {
+                    constraints.push_back(first_expr < stoi(secondOperand));
+                }
+                compareSign =  "<";
+            }
+            else if (compareOperator.compare("ule") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr <= second_expr);
+                } else {
+                    constraints.push_back(first_expr <= stoi(secondOperand));
+                }
+                compareSign =  "<=";
+            }
+            else if (compareOperator.compare("sgt") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr > second_expr);
+                } else {
+                    constraints.push_back(first_expr > stoi(secondOperand));
+                }
+                compareSign =  ">";
+            }
+            else if (compareOperator.compare("sge") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr >= second_expr);
+                } else {
+                    constraints.push_back(first_expr >= stoi(secondOperand));
+                }
+                compareSign =  ">=";
+            }
+            else if (compareOperator.compare("slt") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr < second_expr);
+                } else {
+                    constraints.push_back(first_expr < stoi(secondOperand));
+                }
+                compareSign =  "<";
+            }
+            else if (compareOperator.compare("sle") == 0) {
+                if (!is_number(secondOperand)) {
+                    constraints.push_back(first_expr <= second_expr);
+                } else {
+                    constraints.push_back(first_expr <= stoi(secondOperand));
+                }
+                compareSign = "<=";
+            }
+            else {
+                cout << "Invalid compare operator.";
+                compareSign = "";
+            }
+
+            if (!currBranchResult) {
+                expr originalExpr = constraints.back();
+                constraints.pop_back();
+                constraints.push_back(!originalExpr);
+            }
+
+            MyFile << firstOperand << " " << compareSign << " " << secondOperand << endl;
         }
     }
 //    for (const auto & it : expr_str_to_idx_map) {
@@ -266,7 +278,7 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList) {
     solver s(c);
     for (const auto & curr_expr : constraints) {
         s.add(curr_expr);
-//        cout << curr_expr << "\n";
+        cout << curr_expr << "\n";
     }
 
     switch(s.check()) {
@@ -296,9 +308,14 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
     const ICFGNode* iNode = icfg->getICFGNode(functionRoot);
     std::list<const ICFGNode*> worklist;  // FILOList
     std::list<const ICFGNode*> emptyList;
+    std::list<bool> emptyBoolList;
     std::list<std::list<const ICFGNode*>> pathList;  // FILOList, keeps track of how we got to the current node
+    std::list<std::list<bool>> branchList;  // FILOList, keeps track of branching off
     worklist.push_back(iNode);
     pathList.push_back(emptyList);
+    branchList.push_back(emptyBoolList);
+
+    bool upcomingSplit = false;
 
     while (!worklist.empty()) {
         const ICFGNode* vNode = worklist.back();
@@ -309,12 +326,42 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
             cout << vNode->toString() << "==================\n";
         }
 
+        int cmpTracker = -1;  // -1 -> dw, 0 -> false, 1 -> true
+
+        std::list<bool> currBranchTracker;
+        if (upcomingSplit) {
+            cmpTracker = 0;
+            currBranchTracker = branchList.back();
+            branchList.pop_back();
+        }
+
         for (auto it = vNode->OutEdgeBegin(); it != vNode->OutEdgeEnd(); ++it) {
+            if (cmpTracker >= 0) {
+                std::list<bool> newBranchList = std::list<bool>(currBranchTracker);
+                if (cmpTracker == 0) {
+                    newBranchList.push_back(false);
+                } else {
+                    newBranchList.push_back(true);
+                }
+                branchList.push_back(newBranchList);
+                cmpTracker += 1;
+            }
             ICFGEdge* edge = *it;
             ICFGNode* succNode = edge->getDstNode();
             if (succNode->getId() == targetNode) {
                 cout << currPathList.size() << "\n";  // Path leading to the target node
-                if (checkPathFeasibility(currPathList)) {
+                std::list<bool> currBranchList = branchList.back();
+                branchList.pop_back();
+
+                for (bool currBranchResult : currBranchList) {
+                    cout << "Branch: " << currBranchResult << "\n";
+                }
+
+                for (const ICFGNode* currNode : currPathList) {
+                    cout << "So " << currNode->toString() << "\n";
+                }
+
+                if (checkPathFeasibility(currPathList, currBranchList)) {
                     return true;
                 }
                 continue;
@@ -323,7 +370,13 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
             std::list<const ICFGNode*> newPathList = std::list<const ICFGNode*>(currPathList);
             newPathList.push_back(succNode);
             pathList.push_back(newPathList);
-//            cout << succNode->getId() << "\n";
+            cout << pathList.size() << "\n";
+        }
+
+        if (vNode->toString().find("icmp") != string::npos) {
+            upcomingSplit = true;
+        } else {
+            upcomingSplit = false;
         }
     }
     return false;
