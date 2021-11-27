@@ -49,6 +49,8 @@ int findRoot(ICFG* icfg, const string& function_name);
 
 ofstream MyFile;
 
+string EQUALS_STRING = "==================================================================================";
+
 
 int findRoot(ICFG* icfg, const string& function_name, const string& point_type){
     for (int i = 0; i < icfg->getTotalNodeNum(); i++){
@@ -64,10 +66,19 @@ int findRoot(ICFG* icfg, const string& function_name, const string& point_type){
 }
 
 
-bool is_number(const std::string& s)
-{
+bool is_positive_number(const std::string& s) {
     return !s.empty() && std::find_if(s.begin(),
                                       s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
+}
+
+
+bool is_number(const std::string& s)
+{
+    if (s.find('-') == 0) {
+        return is_positive_number(s.substr(1, s.size() - 1));
+    } else {
+        return is_positive_number(s);
+    }
 }
 
 
@@ -99,6 +110,7 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
             string opcodeName = valueb->getOpcodeName();
             string beforeEqualOperand = valuea->getName().begin();
             string loadOperand = valueb->operand_values().begin()->getName().data();
+            loadOperand = "%" + loadOperand;
 
             //alloca things
 
@@ -143,7 +155,7 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
             icmpBranchList.pop_front();
 //                cout << "Whoo!" << currBranchResult << "\n";
 
-            cout << "lol" << s1 << "\n";
+//            cout << "lol" << s1 << "\n";
             int posOfI32 = s1.find("i32 ");
 
             string compareOperator = s1.substr(posOfOpcode + 5,posOfI32-posOfOpcode-6);
@@ -267,6 +279,61 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
 
             MyFile << firstOperand << " " << compareSign << " " << secondOperand << endl;
         }
+
+
+        // store things
+        posOfOpcode = s1.find("store");
+
+        //see if store is in node
+        if (posOfOpcode != string::npos) {
+
+            int posOfI32 = s1.find("i32 ");
+            int posDelimiter = s1.find(',');
+
+            string secondOperand = s1.substr(posOfI32 + 4,posDelimiter-posOfI32-4); //value that needs to be stored
+            s1.erase(0,posDelimiter+2); //erase node string up to space
+
+            posDelimiter = s1.find(',');
+            int posSpace = s1.find(' ');
+
+            string firstOperand = s1.substr(posSpace+1,posDelimiter-posSpace-1); //place to store it to
+
+            if (expr_str_to_idx_map.find(firstOperand) == expr_str_to_idx_map.end()) {
+                expr_str_to_idx_map[firstOperand] = expr_list.size();
+                expr_list.push_back(c.int_const(firstOperand.c_str()));
+            }
+
+            int firstOperandIdx = expr_str_to_idx_map[firstOperand];
+            auto first_expr_it = expr_list.begin();
+            std::advance(first_expr_it, firstOperandIdx);
+            expr first_expr = *first_expr_it;
+
+            expr second_expr = c.int_const("whoo");
+            if (!is_number(secondOperand)) {
+                if (expr_str_to_idx_map.find(secondOperand) == expr_str_to_idx_map.end()) {
+                    expr_str_to_idx_map[secondOperand] = expr_list.size();
+                    expr_list.push_back(c.int_const(secondOperand.c_str()));
+                }
+                int secondOperandIdx = expr_str_to_idx_map[secondOperand];
+                auto second_expr_it = expr_list.begin();
+                std::advance(second_expr_it, secondOperandIdx);
+                second_expr = *second_expr_it;
+            }
+
+            if (!is_number(secondOperand)) {
+//                cout << "Text" << endl;
+//                cout << secondOperand << endl;
+//                cout << second_expr << endl;
+                constraints.push_back(first_expr == second_expr);
+            } else {
+//                cout << "Number" << endl;
+                constraints.push_back(first_expr == stoi(secondOperand));
+            }
+
+            //secondOperand = firstOperand
+//            cout << "Whoo!" << endl;
+//            cout << firstOperand << "=" << secondOperand << endl;
+        }
     }
 //    for (const auto & it : expr_str_to_idx_map) {
 //        cout << it.first << " " << it.second << "\n";
@@ -275,21 +342,55 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
 //        cout << curr_expr << "\n";
 //    }
 
+    // Adding constraints
     solver s(c);
     for (const auto & curr_expr : constraints) {
         s.add(curr_expr);
-        cout << curr_expr << "\n";
+//        cout << curr_expr << "\n";
     }
 
+    // Printing results
+    cout << "Current Path (in Node ID's): ";
+    for (const ICFGNode* currNode : nodeList) {
+        if (currNode != nodeList.back()) {
+            cout << currNode->getId() << " -> ";
+        } else {
+            cout << currNode->getId() << endl;
+        }
+    }
+
+    cout << "Reachable: ";
+
     switch(s.check()) {
-        case z3::sat:
+        case z3::sat: {
+            cout << "Yes" << endl;
+
+            cout << "Satisfiability Values (Variable Name = Value):" << endl;
+            model m = s.get_model();
+            for (int i = 0; i < m.size(); i++) {
+                func_decl v = m[i];
+                string var_name = v.name().str();
+                cout << var_name.substr(1, var_name.size() - 1) << " = " << m.get_const_interp(v) << endl;
+            }
+
+            cout << EQUALS_STRING << endl;
             return true;
-        case z3::unsat:
+        }
+        case z3::unsat: {
+            cout << "No" << endl;
+            cout << EQUALS_STRING << endl;
             return false;
-        case z3::unknown:
+        }
+        case z3::unknown: {
+            cout << "Unsure" << endl;
+            cout << EQUALS_STRING << endl;
             return false;
-        default:
+        }
+        default: {
+            cout << "Unsure" << endl;
+            cout << EQUALS_STRING << endl;
             return false;
+        }
     }
 }
 
@@ -322,9 +423,9 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
         worklist.pop_back();
         std::list<const ICFGNode*> currPathList = pathList.back();
         pathList.pop_back();
-        if ((int) vNode->getId() != functionRoot) {
-            cout << vNode->toString() << "==================\n";
-        }
+//        if ((int) vNode->getId() != functionRoot) {
+//            cout << vNode->toString() << "==================\n";
+//        }
 
         int cmpTracker = -1;  // -1 -> dw, 0 -> false, 1 -> true
 
@@ -349,20 +450,12 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
             ICFGEdge* edge = *it;
             ICFGNode* succNode = edge->getDstNode();
             if (succNode->getId() == targetNode) {
-                cout << currPathList.size() << "\n";  // Path leading to the target node
+//                cout << currPathList.size() << "\n";  // Path leading to the target node
                 std::list<bool> currBranchList = branchList.back();
                 branchList.pop_back();
 
-                for (bool currBranchResult : currBranchList) {
-                    cout << "Branch: " << currBranchResult << "\n";
-                }
-
-                for (const ICFGNode* currNode : currPathList) {
-                    cout << "So " << currNode->toString() << "\n";
-                }
-
                 if (checkPathFeasibility(currPathList, currBranchList)) {
-                    return true;
+//                    return true;
                 }
                 continue;
             }
@@ -370,7 +463,7 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
             std::list<const ICFGNode*> newPathList = std::list<const ICFGNode*>(currPathList);
             newPathList.push_back(succNode);
             pathList.push_back(newPathList);
-            cout << pathList.size() << "\n";
+//            cout << pathList.size() << "\n";
         }
 
         if (vNode->toString().find("icmp") != string::npos) {
@@ -382,134 +475,6 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
     return false;
 }
 
-
-/*!
- * An example to query/collect all successor nodes from a ICFGNode (iNode) along control-flow graph (ICFG)
- */
-//void traverseOnICFG(ICFG* icfg, const Instruction* inst){
-void traverseOnICFG(ICFG* icfg, int functionRoot){
-    ICFGNode* iNode = icfg->getICFGNode(functionRoot);
-	FIFOWorkList<const ICFGNode*> worklist;
-	std::set<const ICFGNode*> visited;
-	worklist.push(iNode);
-
-	/// Traverse along VFG
-	//for each ICFGNode ∈ ICFGPath do
-	while (!worklist.empty()) {
-		const ICFGNode* vNode = worklist.pop();
-        if ((int)(vNode->getId()) != functionRoot) {
-            cout << vNode->toString() << "==================\n";
-            SVF::ICFGNode::PAGEdgeList pagEdges = vNode->getPAGEdges();
-
-            //for each PAGEdge in ICFGNode.getPAGEdges()
-            for (auto pagEdge : pagEdges) {
-                //auto pagIterator = pagEdges.begin();
-                //std::advance(pagIterator, 0);
-                const Value *valuea = pagEdge->getValue();
-                const Instruction *valueb = pagEdge->getInst();
-
-                cout << valuea->getName().begin() << "\n";
-                cout << valueb->getOpcodeName() << "\n";
-                cout << valueb->operand_values().begin()->getName().data() << "\n";
-                cout << next(valueb->operand_values().begin())->getName().data() << "\n";
-
-                string opcodeName = valueb->getOpcodeName();
-                string beforeEqualOperand = valuea->getName().begin();
-                string loadoperand = valueb->operand_values().begin()->getName().data();
-
-                //alloca things
-                string alloca = "alloca";
-
-                if (opcodeName.compare(alloca) == 0) {
-                    MyFile << "O1 == " << beforeEqualOperand << endl;
-                }
-
-                //load things
-                string load = "load";
-                if (opcodeName.compare(load) == 0) {
-                    MyFile << loadoperand << " == o" << endl;
-                }
-
-
-                //icmp things
-                string s1 = vNode->toString();
-                string s2 = "icmp";
-                string s3 = "!";
-
-                int posOfOpcode = s1.find(s2);
-                //see if icmp is in
-                if (posOfOpcode != string::npos) {
-                    string s4 = "i32 ";
-                    int posOfI32 = s1.find(s4);
-
-                    string compareOperator = s1.substr(posOfOpcode + 5,posOfI32-posOfOpcode-6);
-                    cout << compareOperator << endl;
-                    string compareSign;
-
-                    if (compareOperator.compare("eq") == 0) {
-                        compareSign =  "==";
-                    }
-                    else if (compareOperator.compare("ne") == 0) {
-                        compareSign =  "!=";
-                    }
-                    else if (compareOperator.compare("ugt") == 0) {
-                        compareSign =  ">";
-                    }
-                    else if (compareOperator.compare("uge") == 0) {
-                        compareSign =  ">=";
-                    }
-                    else if (compareOperator.compare("ult") == 0) {
-                        compareSign =  "<";
-                    }
-                    else if (compareOperator.compare("ule") == 0) {
-                        compareSign =  "<=";
-                    }
-                    else if (compareOperator.compare("sgt") == 0) {
-                        compareSign =  ">";
-                    }
-                    else if (compareOperator.compare("sge") == 0) {
-                        compareSign =  ">=";
-                    }
-                    else if (compareOperator.compare("slt") == 0) {
-                        compareSign =  "<";
-                    }
-                    else if (compareOperator.compare("sle") == 0) {
-                        compareSign = "<=";
-                    }
-                    else{
-                        cout << "Invalid compare operator.";
-                        compareSign = "";
-                    }
-
-                    string delimiter = ",";
-                    int posOfDelimiter = s1.find(delimiter);
-
-                    string firstOperand = s1.substr(posOfI32 + 4,posOfDelimiter-posOfI32-4);
-                    cout << firstOperand << endl;
-
-                    s1.erase(0,posOfDelimiter+2);
-
-                    posOfDelimiter = s1.find(",");
-                    string secondOperand = s1.substr(0,posOfDelimiter);
-                    cout << secondOperand << endl;
-
-                    MyFile << firstOperand << " " << compareSign << " " << secondOperand << endl;
-                }
-            }
-        }
-
-
-		for (ICFGNode::const_iterator it = vNode->OutEdgeBegin(), eit =
-				vNode->OutEdgeEnd(); it != eit; ++it) {
-			ICFGEdge* edge = *it;
-			ICFGNode* succNode = edge->getDstNode();
-			if (visited.find(succNode) == visited.end()) {
-				visited.insert(succNode);
-				worklist.push(succNode);
-			}
-		}
-	}
-}
 
 int main(int argc, char ** argv) {
     //file to write mathematical constraints taken from the ICFG
