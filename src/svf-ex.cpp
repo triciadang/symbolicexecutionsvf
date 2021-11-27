@@ -321,12 +321,15 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
             }
 
             if (!is_number(secondOperand)) {
-//                cout << "Text" << endl;
-//                cout << secondOperand << endl;
-//                cout << second_expr << endl;
-                constraints.push_back(first_expr == second_expr);
+                expr_list.erase(first_expr_it);
+                if (firstOperandIdx == expr_list.size()) {
+                    expr_list.push_back(second_expr);
+                } else {
+                    first_expr_it = expr_list.begin();
+                    std::advance(first_expr_it, firstOperandIdx);
+                    expr_list.insert(first_expr_it, second_expr);
+                }
             } else {
-//                cout << "Number" << endl;
                 constraints.push_back(first_expr == stoi(secondOperand));
             }
 
