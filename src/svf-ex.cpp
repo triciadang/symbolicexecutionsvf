@@ -623,7 +623,7 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
 
         std::list<bool> currBranchTracker;
         if (upcomingSplit) {
-            cmpTracker = 0;
+            cmpTracker = 1;
             currBranchTracker = branchList.back();
             branchList.pop_back();
         }
@@ -637,7 +637,7 @@ bool checkReachabilityForFunction(ICFG* icfg, int functionRoot, int targetNode) 
                     newBranchList.push_back(true);
                 }
                 branchList.push_back(newBranchList);
-                cmpTracker += 1;
+                cmpTracker -= 1;
             }
             ICFGEdge* edge = *it;
             ICFGNode* succNode = edge->getDstNode();
