@@ -82,6 +82,33 @@ bool is_number(const std::string& s)
 }
 
 
+void replace_element_at_idx(std::list<expr>& expr_list, int idx, expr& new_expr) {
+    auto expr_list_it = expr_list.begin();
+    std::advance(expr_list_it, idx);
+    expr_list.erase(expr_list_it);
+    if (expr_list.size() == idx) {
+        expr_list.push_back(new_expr);
+    } else {
+        expr_list_it = expr_list.begin();
+        std::advance(expr_list_it, idx);
+        expr_list.insert(expr_list_it, new_expr);
+    }
+}
+
+
+expr get_element_at_idx(std::list<expr>& expr_list, unsigned long idx) {
+    auto expr_it = expr_list.begin();
+    std::advance(expr_it, idx);
+    return *expr_it;
+}
+
+
+expr get_expr_for_var(std::map<string, unsigned long>& expr_str_to_idx_map, std::list<expr>& expr_list, string var) {
+    unsigned long idx = expr_str_to_idx_map[var];
+    return get_element_at_idx(expr_list, idx);
+}
+
+
 /**
  * Accepts a reference to a list of ICFGNode objects, extracts constraints from each node, run an SMT solver on it, and
  * returns whether or not is the path feasible.
@@ -107,10 +134,14 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
             const Value *valuea = pagEdge->getValue();
             const Instruction *valueb = pagEdge->getInst();
 
+//            cout << pagEdge->toString() << endl;
+
             string opcodeName = valueb->getOpcodeName();
             string beforeEqualOperand = valuea->getName().begin();
             string loadOperand = valueb->operand_values().begin()->getName().data();
             loadOperand = "%" + loadOperand;
+
+//            cout << opcodeName << ": " << beforeEqualOperand << "  " << loadOperand << endl;
 
             //alloca things
 
@@ -143,6 +174,162 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
                 expr first_var = *first_var_it;
 
                 constraints.push_back(first_var == load_expr);
+            }
+
+            // add things
+
+            if (opcodeName.compare("add") == 0) {
+
+                if (expr_str_to_idx_map.find(beforeEqualOperand) == expr_str_to_idx_map.end()) {
+                    expr_str_to_idx_map[beforeEqualOperand] = expr_list.size();
+                    expr_list.push_back(c.int_const(beforeEqualOperand.c_str()));
+                }
+
+                int i32Pos = s1.find("i32 ");
+                int commaPos = s1.find(",");
+                string firstVar = s1.substr(i32Pos + 4, commaPos - i32Pos - 4);
+
+                s1.erase(0,commaPos+2);
+                commaPos = s1.find(",");
+                string secondVar = s1.substr(0, commaPos);
+
+                if (!is_number(firstVar)) {
+                    if (!is_number(secondVar)) {
+                        expr first_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, firstVar);
+                        expr second_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, secondVar);
+                        expr added_expr = first_expr + second_expr;
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    } else {
+                        expr first_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, firstVar);
+                        expr added_expr = first_expr + stoi(secondVar);
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    }
+                } else {
+                    if (!is_number(secondVar)) {
+                        expr second_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, secondVar);
+                        expr added_expr = stoi(firstVar) + second_expr;
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    } else {
+                        constraints.push_back(get_expr_for_var(expr_str_to_idx_map, expr_list, beforeEqualOperand) == (stoi(firstVar) + stoi(secondVar)));
+                    }
+                }
+            }
+
+            // subtract things
+
+            if (opcodeName.compare("sub") == 0) {
+
+                if (expr_str_to_idx_map.find(beforeEqualOperand) == expr_str_to_idx_map.end()) {
+                    expr_str_to_idx_map[beforeEqualOperand] = expr_list.size();
+                    expr_list.push_back(c.int_const(beforeEqualOperand.c_str()));
+                }
+
+                int i32Pos = s1.find("i32 ");
+                int commaPos = s1.find(",");
+                string firstVar = s1.substr(i32Pos + 4, commaPos - i32Pos - 4);
+
+                s1.erase(0,commaPos+2);
+                commaPos = s1.find(",");
+                string secondVar = s1.substr(0, commaPos);
+
+                if (!is_number(firstVar)) {
+                    if (!is_number(secondVar)) {
+                        expr first_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, firstVar);
+                        expr second_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, secondVar);
+                        expr added_expr = first_expr - second_expr;
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    } else {
+                        expr first_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, firstVar);
+                        expr added_expr = first_expr - stoi(secondVar);
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    }
+                } else {
+                    if (!is_number(secondVar)) {
+                        expr second_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, secondVar);
+                        expr added_expr = stoi(firstVar) - second_expr;
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    } else {
+                        constraints.push_back(get_expr_for_var(expr_str_to_idx_map, expr_list, beforeEqualOperand) == (stoi(firstVar) - stoi(secondVar)));
+                    }
+                }
+            }
+
+            // multiply things
+
+            if (opcodeName.compare("mul") == 0) {
+
+                if (expr_str_to_idx_map.find(beforeEqualOperand) == expr_str_to_idx_map.end()) {
+                    expr_str_to_idx_map[beforeEqualOperand] = expr_list.size();
+                    expr_list.push_back(c.int_const(beforeEqualOperand.c_str()));
+                }
+
+                int i32Pos = s1.find("i32 ");
+                int commaPos = s1.find(",");
+                string firstVar = s1.substr(i32Pos + 4, commaPos - i32Pos - 4);
+
+                s1.erase(0,commaPos+2);
+                commaPos = s1.find(",");
+                string secondVar = s1.substr(0, commaPos);
+
+                if (!is_number(firstVar)) {
+                    if (!is_number(secondVar)) {
+                        expr first_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, firstVar);
+                        expr second_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, secondVar);
+                        expr added_expr = first_expr * second_expr;
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    } else {
+                        expr first_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, firstVar);
+                        expr added_expr = first_expr * stoi(secondVar);
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    }
+                } else {
+                    if (!is_number(secondVar)) {
+                        expr second_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, secondVar);
+                        expr added_expr = stoi(firstVar) * second_expr;
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    } else {
+                        constraints.push_back(get_expr_for_var(expr_str_to_idx_map, expr_list, beforeEqualOperand) == (stoi(firstVar) * stoi(secondVar)));
+                    }
+                }
+            }
+
+            // add things
+
+            if (opcodeName.compare("sdiv") == 0) {
+
+                if (expr_str_to_idx_map.find(beforeEqualOperand) == expr_str_to_idx_map.end()) {
+                    expr_str_to_idx_map[beforeEqualOperand] = expr_list.size();
+                    expr_list.push_back(c.int_const(beforeEqualOperand.c_str()));
+                }
+
+                int i32Pos = s1.find("i32 ");
+                int commaPos = s1.find(",");
+                string firstVar = s1.substr(i32Pos + 4, commaPos - i32Pos - 4);
+
+                s1.erase(0,commaPos+2);
+                commaPos = s1.find(",");
+                string secondVar = s1.substr(0, commaPos);
+
+                if (!is_number(firstVar)) {
+                    if (!is_number(secondVar)) {
+                        expr first_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, firstVar);
+                        expr second_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, secondVar);
+                        expr added_expr = first_expr / second_expr;
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    } else {
+                        expr first_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, firstVar);
+                        expr added_expr = first_expr / stoi(secondVar);
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    }
+                } else {
+                    if (!is_number(secondVar)) {
+                        expr second_expr = get_expr_for_var(expr_str_to_idx_map, expr_list, secondVar);
+                        expr added_expr = stoi(firstVar) / second_expr;
+                        replace_element_at_idx(expr_list, expr_str_to_idx_map[beforeEqualOperand], added_expr);
+                    } else {
+                        constraints.push_back(get_expr_for_var(expr_str_to_idx_map, expr_list, beforeEqualOperand) == (stoi(firstVar) / stoi(secondVar)));
+                    }
+                }
             }
         }
 
@@ -321,14 +508,15 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
             }
 
             if (!is_number(secondOperand)) {
-                expr_list.erase(first_expr_it);
-                if (firstOperandIdx == expr_list.size()) {
-                    expr_list.push_back(second_expr);
-                } else {
-                    first_expr_it = expr_list.begin();
-                    std::advance(first_expr_it, firstOperandIdx);
-                    expr_list.insert(first_expr_it, second_expr);
-                }
+                replace_element_at_idx(expr_list, firstOperandIdx, second_expr);
+//                expr_list.erase(first_expr_it);
+//                if (firstOperandIdx == expr_list.size()) {
+//                    expr_list.push_back(second_expr);
+//                } else {
+//                    first_expr_it = expr_list.begin();
+//                    std::advance(first_expr_it, firstOperandIdx);
+//                    expr_list.insert(first_expr_it, second_expr);
+//                }
             } else {
                 constraints.push_back(first_expr == stoi(secondOperand));
             }
@@ -345,13 +533,6 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
 //        cout << curr_expr << "\n";
 //    }
 
-    // Adding constraints
-    solver s(c);
-    for (const auto & curr_expr : constraints) {
-        s.add(curr_expr);
-//        cout << curr_expr << "\n";
-    }
-
     // Printing results
     cout << "Current Path (in Node ID's): ";
     for (const ICFGNode* currNode : nodeList) {
@@ -360,6 +541,14 @@ bool checkPathFeasibility(std::list<const ICFGNode*>& nodeList, std::list<bool>&
         } else {
             cout << currNode->getId() << endl;
         }
+    }
+
+    // Adding constraints
+    solver s(c);
+    cout << "Constraints:" << endl;
+    for (const auto & curr_expr : constraints) {
+        s.add(curr_expr);
+        cout << curr_expr << endl;
     }
 
     cout << "Reachable: ";
